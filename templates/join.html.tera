@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.1/build/pure-min.css" crossorigin="anonymous">
+    <title>Document</title>
+</head>
+<body>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Island name</th>
+                <th>Host name</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for island in islands %}
+            <tr>
+                <td>{{loop.index}}</td>
+                <td>{{island.name}}</td>
+                <td>{{island.host_name}}</td>
+                <td>{{island.turnips_price}}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>`
+</body>
+</html>
