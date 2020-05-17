@@ -17,3 +17,4 @@ rand="^0.7.3"
 rand_core="^0.5.1"
 rust-argon2="^0.8"
 jsonwebtoken="^5.0.0"
+uuid = { version = "0.8", features = ["serde", "v4"] }

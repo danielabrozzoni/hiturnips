@@ -1,31 +1,24 @@
 use crate::rocket::outcome::IntoOutcome;
 use argon2::{self, Config};
-use jsonwebtoken::{encode, Header};
+use jsonwebtoken::{encode, decode, Header, Validation};
 use rand::rngs::OsRng;
 use rand_core::RngCore;
 use redis::Commands;
 use rocket::http::{Cookie, Cookies};
 use rocket::request::{self, Form, FromRequest, Request};
+use rocket_contrib::templates::Template;
 use rocket::response::Flash;
 use rocket::response::Redirect;
 use rocket::State;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::db::Database;
+use crate::db::{Database, Databaseable};
+use crate::model::{User};
 use crate::errors::TurnipsError;
-
-#[derive(Serialize, Deserialize)]
-pub struct User {
-    pub email: String,
-    pub psw_hash: String,
-    pub salt: Vec<u8>,
-    pub roles: Vec<String>,
-}
-
-pub struct Admin {}
 
 #[derive(Serialize, Deserialize)]
 pub struct UserRolesToken {
@@ -49,7 +42,17 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
         request
             .cookies()
             .get("jwt")
-            .and_then(|cookie| db.get_user(cookie.value()).ok())
+            .and_then(|cookie| {
+                decode::<UserRolesToken>(
+                    &cookie.value(),
+                    "supersupersecret,hopingnoonewillseethis".as_ref(),
+                    &Validation::default(),
+                ).ok()
+            })
+            .and_then(|token| {
+                let claims = token.claims;
+                User::get(&claims.email, &mut db.connect().unwrap()).ok().flatten()
+            })
             .or_forward(())
     }
 }
@@ -74,15 +77,22 @@ pub fn jwt_generate(email: String, roles: Vec<String>) -> Result<String, Turnips
 }
 
 #[derive(FromForm)]
-pub struct Login {
+pub struct LoginForm {
     email: String,
     password: String,
 }
 
+#[get("/login")]
+pub fn login_get() -> Template {
+    let mut context = HashMap::new();
+    context.insert(0, 0);
+    Template::render("login", context)
+}
+
 #[post("/login", data = "<login>")]
-pub fn login(
+pub fn login_submit(
     mut cookies: Cookies,
-    login: Form<Login>,
+    login: Form<LoginForm>,
     db: State<Arc<Database>>,
 ) -> Result<Redirect, Flash<Redirect>> {
     let mut connection = db.connect().unwrap();
@@ -111,8 +121,15 @@ pub fn login(
     Ok(Redirect::to("/"))
 }
 
+#[get("/signup")]
+pub fn signup_get() -> Template {
+    let mut context = HashMap::new();
+    context.insert(0, 0);
+    Template::render("signup", context)
+}
+
 #[post("/signup", data = "<login>")]
-pub fn sign_up(login: Form<Login>, database: State<Arc<Database>>) -> Result<(), TurnipsError> {
+pub fn signup_submit(login: Form<LoginForm>, database: State<Arc<Database>>) -> Result<(), TurnipsError> {
     // TODO error if email already exists
 
     let password = login.password.as_bytes();
@@ -129,7 +146,7 @@ pub fn sign_up(login: Form<Login>, database: State<Arc<Database>>) -> Result<(),
         roles: roles.to_vec(),
     };
 
-    database.add_user(&user)?;
+    user.add(&mut database.connect()?)?;
 
     Ok(())
 }

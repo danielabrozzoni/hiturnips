@@ -7,10 +7,8 @@ mod authentication;
 mod db;
 mod errors;
 mod island;
+mod model;
 
-use crate::authentication::*;
-use crate::island::*;
-use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 use std::sync::Arc;
 
@@ -24,13 +22,12 @@ fn main() {
                 island::get_create_island_authorized,
                 island::get_create_island,
                 island::see_islands,
-                authentication::login,
-                authentication::sign_up,
+                island::see_island,
+                authentication::login_get,
+                authentication::login_submit,
+                authentication::signup_get,
+                authentication::signup_submit,
             ],
-        )
-        .mount(
-            "/static",
-            StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")),
         )
         .attach(Template::fairing())
         .launch();
