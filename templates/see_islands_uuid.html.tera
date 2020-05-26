@@ -1,0 +1,18 @@
+{% extends "base_template" %}
+{% block content %}
+<p>
+Join {{island.host_name}} on {{island.name}}! 
+<br>
+<br>
+Turnip price is {{island.turnips_price}}. 
+<br>
+Fees are/are not required:
+<div class="box"> blabla </div>
+<br>
+The host is wearing...
+<div class="box"> blabla </div>
+You'll find Nook's shop...
+<div class="box"> blabla </div>
+<button class="button" onClick='window.location.href="/rank/{{island.uuid}}"'>Join!</button>
+</p>
+{% endblock content%}

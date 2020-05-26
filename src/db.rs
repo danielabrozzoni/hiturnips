@@ -1,19 +1,22 @@
-use crate::errors::TurnipsError;
-use redis::{Client, Connection};
 use std::collections::HashMap;
-use serde_json::json;
-use serde::Serialize;
+
+use redis::{Client, Connection};
 use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_json::json;
+
+use crate::errors::TurnipsError;
 
 pub struct Database {
     client: Client,
 }
 
 pub trait Databaseable: Serialize + DeserializeOwned {
-
     fn get_key(&self) -> String;
 
     fn get_table() -> &'static str;
+
+    fn get_indexes(&self) -> Vec<(&'static str, String)>;
 
     fn add(&self, connection: &mut Connection) -> Result<(), TurnipsError> {
         let _: () = redis::Cmd::new()
@@ -22,6 +25,16 @@ pub trait Databaseable: Serialize + DeserializeOwned {
             .arg(self.get_key())
             .arg(json!(&self).to_string())
             .query(connection)?;
+
+        for (key, value) in self.get_indexes() {
+            let _: () = redis::Cmd::new()
+                .arg("HSET")
+                .arg(format!("{}:{}", Self::get_table(), key))
+                .arg(value)
+                .arg(self.get_key())
+                .query(connection)?;
+        }
+
         Ok(())
     }
 
@@ -34,7 +47,7 @@ pub trait Databaseable: Serialize + DeserializeOwned {
 
         match obj {
             Some(i) => Ok(serde_json::from_str(&i)?),
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 
@@ -46,6 +59,31 @@ pub trait Databaseable: Serialize + DeserializeOwned {
             .into_iter()
             .map(|(_, v)| serde_json::from_str(&v))
             .collect::<Result<_, _>>()?)
+    }
+
+    fn get_by_index(
+        index: (&'static str, &str),
+        connection: &mut Connection,
+    ) -> Result<Option<Self>, TurnipsError> {
+        let index: Option<String> = redis::Cmd::new()
+            .arg("HGET")
+            .arg(format!("{}:{}", Self::get_table(), index.0))
+            .arg(index.1)
+            .query(connection)?;
+
+        match index {
+            Some(i) => Ok(Self::get(&i, connection)?),
+            None => Ok(None),
+        }
+    }
+
+    fn delete(self, connection: &mut Connection) -> Result<(), TurnipsError> {
+        let _: () = redis::Cmd::new()
+            .arg("HDEL")
+            .arg(Self::get_table())
+            .arg(self.get_key())
+            .query(connection)?;
+        Ok(())
     }
 }
 

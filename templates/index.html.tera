@@ -1,13 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Hi turnips</h1>
-    <button onclick="window.location.href='/host'">Host</button>
-    <button onclick="window.location.href='/see_islands'">Join</button>
-</body>
-</html>
+{% extends "base_template" %}
+{% block content %}
+        <div class="container is-fullheight">
+            <h1 class="title">Hi turnips</h1>
+            <p class="Subtitle">Sell your turnips <br> It's free but if you pay me I'm happy.<p>
+        </div>
+{% endblock content %}

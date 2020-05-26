@@ -9,8 +9,17 @@ mod errors;
 mod island;
 mod model;
 
+use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+#[get("/")]
+fn index() -> Template {
+    let mut context = HashMap::new();
+    context.insert(0, 0);
+    Template::render("index", context)
+}
 
 fn main() {
     rocket::ignite()
@@ -18,17 +27,26 @@ fn main() {
         .mount(
             "/",
             routes![
+                index,
                 island::create_island,
                 island::get_create_island_authorized,
                 island::get_create_island,
                 island::see_islands,
-                island::see_island,
+                island::see_islands_uuid,
+                island::join_queue,
+                island::leave_queue,
+                island::get_rank_template,
                 authentication::login_get,
+                authentication::login_get_redirect,
                 authentication::login_submit,
+                authentication::login_submit_redirect,
                 authentication::signup_get,
+                authentication::signup_get_redirect,
                 authentication::signup_submit,
+                authentication::signup_submit_redirect,
             ],
         )
+        .mount("/static", StaticFiles::from("static/"))
         .attach(Template::fairing())
         .launch();
 }

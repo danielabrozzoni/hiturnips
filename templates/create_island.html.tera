@@ -1,29 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+{% extends "base_template" %}
+{% block content %}
     <form action="/create_island" method="POST">
-        <label for="name">Island name:</label><br>
-        <input type="text" name="name"><br>
-        <label for="host_name">Host name:</label><br>
-        <input type="text" name="host_name"><br>
-        <label for="DODO">DODO:</label><br>
-        <input type="text" name="DODO"><br>
-        <label for="turnips_price">turnips price:</label><br>
-        <input type="number" name="turnips_price"><br>
-        <label for="max_queue_size">turnips price:</label><br>
-        <input type="number" name="max_queue_size"><br>
-        <label for="fee_description">Fee description:</label><br>
-        <input type="text" name="fee_description"><br>
-        <label for="host_description">Fee description:</label><br>
-        <input type="text" name="host_description"><br>
-        <label for="map_description">Fee description:</label><br>
-        <input type="text" name="map_description"><br>
-        <input type="submit" value="Submit">
+        <label for="name" class="label">Island name:</label>
+        <input type="text" name="name" class="field">
+        <label for="host_name" class="label">Host name:</label>
+        <input type="text" name="host_name" class="field">
+        <label for="dodo" class="label">DODO:</label>
+        <input type="text" name="dodo" class="field">
+        <label for="turnips_price" class="label">Turnips price:</label>
+        <input type="number" name="turnips_price" class="field">
+        <label for="dodo" class="label">Max visitors allowed:</label>
+        <input type="text" name="max_visitors_allowed" class="field">
+        <label for="max_queue_size" class="label">Max queue size:</label>
+        <input type="number" name="max_queue_size" class="field">
+        <label for="fee_description" class="label">Fee description:</label>
+        <input type="text" name="fee_description" class="field">
+        <label for="host_description" class="label">Host description:</label>
+        <input type="text" name="host_description" class="field">
+        <label for="map_description" class="label">Map description:</label>
+        <input type="text" name="map_description" class="field">
+        <div class="field is-grouped">
+            <div class="control">
+                <button class="button is-link">Create island!</button>
+            </div>
+            <div class="control">
+                <button class="button is-link is-light">Cancel</button>
+            </div>
+        </div>
     </form>
-</body>
-</html>
+{% endblock content%}
