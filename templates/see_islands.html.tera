@@ -1,6 +1,6 @@
 {% extends "base_template" %}
 {% block content %}
-    <table class="table">
+    <table class="table is-hoverable is-fullwidth">
         <thead>
             <tr>
                 <th>#</th>
@@ -13,14 +13,14 @@
         </thead>
         <tbody>
         {% for island in islands %}
-            <tr>
+            <tr onClick="window.location.href='/see_islands/{{island.uuid}}'">
                 <td>{{loop.index}}</td>
                 <td>{{island.name}}</td>
                 <td>{{island.host_name}}</td>
                 <td>{{island.turnips_price}}</td>
                 <td>Required</td>
                 <td>123</td>
-                <td><button class="button" onClick="window.location.href='/see_islands/{{island.uuid}}'">></button></td>
+                </a>
             </tr>
         {% endfor %}
         </tbody>

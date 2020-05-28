@@ -1,23 +1,23 @@
 {% extends "base_template" %}
 {% block content %}
     <form action="/create_island" method="POST">
-        <label for="name" class="label">Island name:</label>
-        <input type="text" name="name" class="field">
-        <label for="host_name" class="label">Host name:</label>
-        <input type="text" name="host_name" class="field">
-        <label for="dodo" class="label">DODO:</label>
-        <input type="text" name="dodo" class="field">
-        <label for="turnips_price" class="label">Turnips price:</label>
-        <input type="number" name="turnips_price" class="field">
-        <label for="dodo" class="label">Max visitors allowed:</label>
-        <input type="text" name="max_visitors_allowed" class="field">
-        <label for="max_queue_size" class="label">Max queue size:</label>
-        <input type="number" name="max_queue_size" class="field">
-        <label for="fee_description" class="label">Fee description:</label>
+        <label for="name" class="label">Island name*</label>
+        <input type="text" name="name" class="field" required>
+        <label for="host_name" class="label">Host name*</label>
+        <input type="text" name="host_name" class="field" required>
+        <label for="dodo" class="label">DODO*</label>
+        <input type="text" name="dodo" class="field" required>
+        <label for="turnips_price" class="label">Turnips price*</label>
+        <input type="number" name="turnips_price" class="field" required>
+        <label for="dodo" class="label">Max visitors allowed*</label>
+        <input type="number" name="max_visitors_allowed" class="field" default="4">
+        <label for="max_queue_size" class="label">Max queue size*</label>
+        <input type="number" name="max_queue_size" class="field" default="50">
+        <label for="fee_description" class="label">Fee description</label>
         <input type="text" name="fee_description" class="field">
-        <label for="host_description" class="label">Host description:</label>
+        <label for="host_description" class="label">Host description</label>
         <input type="text" name="host_description" class="field">
-        <label for="map_description" class="label">Map description:</label>
+        <label for="map_description" class="label">Map description</label>
         <input type="text" name="map_description" class="field">
         <div class="field is-grouped">
             <div class="control">
