@@ -44,6 +44,7 @@ fn main() {
                 authentication::signup_get_redirect,
                 authentication::signup_submit,
                 authentication::signup_submit_redirect,
+                authentication::logout,
             ],
         )
         .mount("/static", StaticFiles::from("static/"))

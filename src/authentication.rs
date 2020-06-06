@@ -235,3 +235,9 @@ pub fn signup_submit(
 
     Ok(Redirect::to("/"))
 }
+
+#[get("/logout")]
+pub fn logout(mut cookies: Cookies) -> Redirect {
+    cookies.remove(Cookie::named("jwt"));
+    Redirect::to("/")
+}
