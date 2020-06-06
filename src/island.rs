@@ -10,7 +10,7 @@ use rocket::State;
 use rocket_contrib::templates::Template;
 use uuid::Uuid;
 
-use crate::authentication::User;
+use crate::authentication::{User, IslandHost};
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
 use crate::model::FullResponse;
@@ -18,6 +18,7 @@ use crate::model::FullResponse;
 #[derive(Debug, Serialize, Deserialize, FromForm)]
 pub struct ClientCreateIsland {
     pub turnips_price: u16,
+    pub fee_required: bool,
     pub fee_description: Option<String>,
     pub map_description: Option<String>,
     pub host_description: Option<String>,
@@ -34,6 +35,7 @@ pub struct ClientCreateIsland {
 pub struct ClientResponseIsland {
     pub uuid: Uuid,
     pub turnips_price: u16,
+    pub fee_required: bool,
     pub fee_description: Option<String>,
     pub map_description: Option<String>,
     pub host_description: Option<String>,
@@ -49,7 +51,6 @@ pub struct DatabaseIsland {
     pub dodo: String,
     pub client_response_island: ClientResponseIsland,
     //rating?
-    //queue?
 }
 
 impl Databaseable for DatabaseIsland {
@@ -69,7 +70,7 @@ impl Databaseable for DatabaseIsland {
 #[get("/see_islands")]
 pub fn see_islands(db: State<Arc<Database>>) -> Result<Template, TurnipsError> {
     let mut context = HashMap::new();
-    let islands = DatabaseIsland::get_all(&mut db.connect()?)?
+    let islands = DatabaseIsland::get_all(&mut db.connect())?
         .into_iter()
         .map(|i| i.client_response_island)
         .collect::<Vec<_>>();
@@ -83,7 +84,7 @@ pub fn see_islands_uuid(
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
     let mut context = HashMap::new();
-    let island = DatabaseIsland::get(&uuid, &mut db.connect()?)?;
+    let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
         let island = i.client_response_island;
         context.insert("island", island);
@@ -96,7 +97,21 @@ pub fn see_islands_uuid(
     }
 }
 
-//pub fn see_island_host(host: IslandHost, uuid: String, db: State<Arc<Database>>) {}
+#[get("/see_islands/<uuid>")]
+pub fn see_island_host(host: IslandHost, uuid: String, db: State<Arc<Database>>) -> Result<FullResponse, TurnipsError> {
+    let mut context = HashMap::new();
+    let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
+    if let Some(i) = island {
+        let island = i.client_response_island;
+        context.insert("island", island);
+        Ok(FullResponse::Template(Template::render(
+            "see_islands_uuid_host",
+            context,
+        )))
+    } else {
+        Ok(FullResponse::Status(Status::NotFound))
+    }
+}
 
 #[get("/create_island", rank = 2)]
 pub fn get_create_island_authorized(_user: User) -> Template {
@@ -124,6 +139,7 @@ pub fn create_island(
     let client_response_island = ClientResponseIsland {
         uuid,
         turnips_price: island.turnips_price,
+        fee_required: island.fee_required,
         fee_description: island.fee_description,
         map_description: island.map_description,
         host_description: island.host_description,
@@ -139,7 +155,7 @@ pub fn create_island(
         client_response_island,
     };
 
-    database_island.add(&mut db.connect()?)?;
+    database_island.add(&mut db.connect())?;
 
     Ok(())
 }
@@ -162,7 +178,7 @@ pub fn join_queue(
                 .as_secs(),
         )
         .arg(user.get_key())
-        .query(&mut db.connect()?)?;
+        .query(&mut db.connect())?;
 
     Ok(Redirect::to(format!("/rank/{}", island_uuid)))
 }
@@ -177,10 +193,11 @@ pub fn leave_queue(
         .arg("ZREM")
         .arg(format!("queue:{}", island_uuid))
         .arg(user.get_key())
-        .query(&mut db.connect()?)?;
+        .query(&mut db.connect())?;
     Ok(())
 }
 
+// TODO remove this template
 #[get("/rank/<island_uuid>")]
 pub fn get_rank_template(
     user: User,
@@ -202,7 +219,7 @@ pub fn get_rank(
         .arg("ZRANK")
         .arg(format!("queue:{}", island_uuid))
         .arg(user.get_key())
-        .query(&mut db.connect()?)?;
+        .query(&mut db.connect())?;
     Ok(rank)
 }
 

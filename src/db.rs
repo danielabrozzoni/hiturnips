@@ -97,7 +97,7 @@ impl Database {
         Ok(Database { client })
     }
 
-    pub fn connect(&self) -> Result<Connection, TurnipsError> {
-        Ok(self.client.get_connection()?)
+    pub fn connect(&self) -> Connection {
+        self.client.get_connection().expect("Db connection failure")
     }
 }

@@ -1,3 +1,6 @@
+use rocket::Request;
+use rocket::http::Status;
+
 #[derive(Debug)]
 pub enum TurnipsError {
     JSON(serde_json::error::Error),
@@ -15,6 +18,12 @@ macro_rules! impl_error {
             }
         }
     };
+}
+
+impl std::convert::From<TurnipsError> for Status {
+    fn from(err: TurnipsError) -> Self {
+        Status::InternalServerError
+    }
 }
 
 impl_error!(serde_json::Error, JSON);

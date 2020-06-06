@@ -17,6 +17,7 @@ use uuid::Uuid;
 
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
+use crate::island::DatabaseIsland;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -48,7 +49,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
         let db = request.guard::<State<Arc<Database>>>()?;
-        println!("{:?}", request.get_param::<'a, String>(1));
         request
             .cookies()
             .get("jwt")
@@ -62,7 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             })
             .and_then(|token| {
                 let claims = token.claims;
-                User::get(&claims.uuid, &mut db.connect().unwrap())
+                User::get(&claims.uuid, &mut db.connect())
                     .ok()
                     .flatten()
             })
@@ -75,36 +75,34 @@ pub struct IslandHost {
     pub island_uuid: String,
 }
 
-/*
 impl<'a, 'r> FromRequest<'a, 'r> for IslandHost {
     type Error = ();
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<IslandHost, ()> {
         let db = request.guard::<State<Arc<Database>>>()?;
         let user = request.guard::<User>()?;
-        println!("{:?}", request.get_param(2));
+        let island_uuid: Option<Result<String, _>> = request.get_param(1);
 
-        request
-            .cookies()
-            .get("jwt")
-            .and_then(|cookie| {
-                decode::<UserRolesToken>(
-                    &cookie.value(),
-                    "supersupersecret,hopingnoonewillseethis".as_ref(),
-                    &Validation::default(),
-                )
-                .ok()
-            })
-            .and_then(|token| {
-                let claims = token.claims;
-                User::get(&claims.uuid, &mut db.connect().unwrap())
-                    .ok()
-                    .flatten()
-            })
-            .or_forward(())
+        let island_uuid = match island_uuid {
+            Some(Ok(s)) => s,
+            _ => "".to_string(),
+        };
+
+        let island = DatabaseIsland::get(&island_uuid, &mut db.connect()).unwrap();
+
+        match island {
+            Some(i) => {
+                if i.user_uuid == user.uuid.to_hyphenated().to_string() {
+                    request::Outcome::Success(IslandHost { user, island_uuid })
+                } else {
+                    request::Outcome::Forward(())
+                }
+            }
+            None => request::Outcome::Forward(())
+
+        }
     }
 }
-*/
 
 #[derive(Serialize, Deserialize)]
 pub struct UserRolesToken {
@@ -114,19 +112,22 @@ pub struct UserRolesToken {
     pub roles: Vec<String>,
 }
 
+/*
+ * FIXME: maybe use this for paid subsicriptions?
 impl UserRolesToken {
     fn has_role(&self, role: &str) -> bool {
         self.roles.contains(&role.to_string())
     }
 }
+*/
 
 pub fn jwt_generate(user: &User) -> Result<String, TurnipsError> {
     let iat = SystemTime::now();
     let exp = iat + Duration::from_secs(60 * 60 * 24 * 7);
 
     let payload = UserRolesToken {
-        iat: iat.duration_since(UNIX_EPOCH)?.as_secs(),
-        exp: exp.duration_since(UNIX_EPOCH)?.as_secs(),
+        iat: iat.duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        exp: exp.duration_since(UNIX_EPOCH).unwrap().as_secs(),
         uuid: user.uuid.to_hyphenated().to_string(),
         roles: user.roles.clone(),
     };
@@ -167,25 +168,25 @@ pub fn login_submit(
     login: Form<LoginForm>,
     db: State<Arc<Database>>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    let mut connection = db.connect().unwrap();
+    let mut connection = db.connect();
 
     let user: Option<User> = User::get_by_index(("email", &login.email), &mut connection).unwrap();
 
     if let None = user {
-        return Err(Flash::error(Redirect::to("/"), "Invalid username."));
+        return Err(Flash::error(Redirect::to("/login"), "Invalid username."));
     }
 
     let user = user.unwrap();
 
     // Argon2 password verifier
     if !argon2::verify_encoded(&user.psw_hash, &login.password.clone().into_bytes()).unwrap() {
-        return Err(Flash::error(Redirect::to("/"), "Wrong password"));
+        return Err(Flash::error(Redirect::to("/login"), "Wrong password"));
     }
 
     // Add JWT to cookies
     cookies.add(Cookie::new::<String, String>(
         "jwt".into(),
-        jwt_generate(&user).unwrap(),
+        jwt_generate(&user).expect("Failed jwt token generation"),
     ));
 
     Ok(Redirect::to("/"))
@@ -212,7 +213,7 @@ pub fn signup_submit_redirect(_user: User) -> Redirect {
 pub fn signup_submit(
     login: Form<LoginForm>,
     database: State<Arc<Database>>,
-) -> Result<(), TurnipsError> {
+) -> Result<Redirect, TurnipsError> {
     // TODO error if email already exists
 
     let password = login.password.as_bytes();
@@ -230,7 +231,7 @@ pub fn signup_submit(
         roles: roles.to_vec(),
     };
 
-    user.add(&mut database.connect()?)?;
+    user.add(&mut database.connect())?;
 
-    Ok(())
+    Ok(Redirect::to("/"))
 }

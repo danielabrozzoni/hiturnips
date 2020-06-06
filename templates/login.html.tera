@@ -1,7 +1,7 @@
 {% extends "base_template" %}
 {% block content %}
 <div class="content">
-    <h2>Login</h2>
+    <div class="title">Login</div>
     <form action="/login" method="post">
         <div class="field">
             <label class="label" for="email">Email</label>
@@ -12,7 +12,8 @@
             <label class="label" for="password">Password</label>
             <input type="password" placeholder="Enter Password" name="password" required>
         </div>
-
+        <br>
+        <p> No account yet? <a href="/signup"> Signup </a> </p>
         <button class="button" type="submit">Login</button>
     </form>
 </div>

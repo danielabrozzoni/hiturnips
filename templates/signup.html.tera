@@ -1,7 +1,7 @@
 {% extends "base_template" %}
 {% block content %}
 <div class="content">
-    <h2>Signup</h2>
+    <div class="title">Create an account</div>
     <form action="/signup" method="post">
         <div class="field">
             <label class="label" for="email">Email</label>
@@ -10,10 +10,25 @@
 
         <div class="field">
             <label class="label" for="password">Password</label>
-            <input type="password" placeholder="Enter Password" name="password" required>
+            <input type="password" placeholder="Enter Password" id="password" name="password" required>
+            <span class="icon"> <i id="pass-status" class="far fa-eye-slash" aria-hidden="true" onClick="show_hide_psw()" style="margin-left:5px"></i> </span>
         </div>
-
+        <br>
+        <p> Already have an account? <a href="/login"> Login </a> </p>
         <button class="button" type="submit">Signup</button>
     </form>
 </div>
+<script>
+function show_hide_psw() {
+    var psw = document.getElementById("password");
+    var icon = document.getElementById("pass-status");
+    if (psw.type == "password") {
+        psw.type = "text";
+        icon.className = "far fa-eye";
+    } else {
+        psw.type = "password";
+        icon.className = "far fa-eye-slash";
+    }
+}
+</script>
 {% endblock content%}

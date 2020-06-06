@@ -13,6 +13,8 @@
         <input type="number" name="max_visitors_allowed" class="field" default="4">
         <label for="max_queue_size" class="label">Max queue size*</label>
         <input type="number" name="max_queue_size" class="field" default="50">
+        <label for="fee_required" class="label">Are fees required?</label>
+        <input type="checkbox" name="fee_required" class="field">
         <label for="fee_description" class="label">Fee description</label>
         <input type="text" name="fee_description" class="field">
         <label for="host_description" class="label">Host description</label>

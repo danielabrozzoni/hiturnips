@@ -1,5 +1,9 @@
 {% extends "base_template" %}
 {% block content %}
+    <div class="notification is-danger is-light">
+    <button class="delete"></button>
+    Keep in mind that you'll need to <a href="/signup">create an account</a> and <a href="/login">login into it</a> before joining islands.
+    </div>
     <table class="table is-hoverable is-fullwidth">
         <thead>
             <tr>
@@ -18,11 +22,23 @@
                 <td>{{island.name}}</td>
                 <td>{{island.host_name}}</td>
                 <td>{{island.turnips_price}}</td>
-                <td>Required</td>
+                <td>{{island.fee_required}}</td>
                 <td>123</td>
                 </a>
             </tr>
         {% endfor %}
         </tbody>
     </table>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            $notification = $delete.parentNode;
+
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+        });
+    </script>
+
 {% endblock content %}

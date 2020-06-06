@@ -6,7 +6,11 @@ Join {{island.host_name}} on {{island.name}}!
 <br>
 Turnip price is {{island.turnips_price}}. 
 <br>
-Fees are/are not required:
+{% if island.fee_required%}
+Fees are <bold> required </bold> on this island!
+{% else %}
+Fees <bold> are not required </bold> on this island!
+{% endif %}
 <div class="box"> blabla </div>
 <br>
 The host is wearing...

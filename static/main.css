@@ -1,2 +1,15 @@
 footer {
 }
+
+.navbar {
+    height: 30px;
+}
+
+.medium-size {
+    font-size:20pt;
+}
+
+.title {
+    font-size:30pt;
+    font-weight: normal;
+}

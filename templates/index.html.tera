@@ -1,7 +1,19 @@
 {% extends "base_template" %}
 {% block content %}
         <div class="container is-fullheight">
-            <h1 class="title">Hi turnips</h1>
-            <p class="Subtitle">Sell your turnips <br> It's free but if you pay me I'm happy.<p>
+            <img src="static/turnips_logo.svg" style="height:300px">
+            <div class="content medium-size">
+                <p> Welcome to the first turnips exchange with: <br>
+                <ul>
+                <li> Built-in chat </li>
+                <li> Estimate time of waiting in queues </li>
+                <li> Hosts and sellers ratings </li>
+                <li> Clean, simple UI </li>
+                </ul>
+                <br>
+                Don't know what to do? Take a look at <a href="/see_islands"> available islands! </a>
+
+                </p>
+            </div>
         </div>
 {% endblock content %}
