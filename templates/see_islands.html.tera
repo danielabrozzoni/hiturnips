@@ -1,9 +1,11 @@
 {% extends "base_template" %}
 {% block content %}
-    <div class="notification is-danger is-light">
-    <button class="delete"></button>
-    Keep in mind that you'll need to <a href="/signup">create an account</a> and <a href="/login">login into it</a> before joining islands.
-    </div>
+    {% if not is_logged_in %}
+        <div class="notification is-danger is-light">
+        <button class="delete"></button>
+        Keep in mind that you'll need to <a href="/signup">create an account</a> and <a href="/login">login into it</a> before joining islands.
+        </div>
+    {% endif %}
     <table class="table is-hoverable is-fullwidth">
         <thead>
             <tr>

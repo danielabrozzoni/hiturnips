@@ -10,10 +10,10 @@ use rocket::State;
 use rocket_contrib::templates::Template;
 use uuid::Uuid;
 
-use crate::authentication::{User, IslandHost};
+use crate::authentication::{IslandHost, User};
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
-use crate::model::FullResponse;
+use crate::model::{self, FullResponse};
 
 #[derive(Debug, Serialize, Deserialize, FromForm)]
 pub struct ClientCreateIsland {
@@ -68,45 +68,61 @@ impl Databaseable for DatabaseIsland {
 }
 
 #[get("/see_islands")]
-pub fn see_islands(db: State<Arc<Database>>) -> Result<Template, TurnipsError> {
-    let mut context = HashMap::new();
+pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Template, TurnipsError> {
     let islands = DatabaseIsland::get_all(&mut db.connect())?
         .into_iter()
         .map(|i| i.client_response_island)
         .collect::<Vec<_>>();
-    context.insert("islands", islands);
-    Ok(Template::render("see_islands", context))
+
+    let is_logged_in = user.is_some();
+
+    Ok(Template::render(
+        "see_islands",
+        model::TemplateSeeIslands {
+            is_logged_in,
+            islands,
+        },
+    ))
 }
 
-#[get("/see_islands/<uuid>")]
+#[get("/see_islands/<uuid>", rank = 3)]
 pub fn see_islands_uuid(
+    user: Option<User>,
     uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
-    let mut context = HashMap::new();
+    let is_logged_in = user.is_some();
+
     let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
         let island = i.client_response_island;
-        context.insert("island", island);
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid",
-            context,
+            model::TemplateSeeIslandsUuid {
+                is_logged_in,
+                island,
+            },
         )))
     } else {
         Ok(FullResponse::Status(Status::NotFound))
     }
 }
 
-#[get("/see_islands/<uuid>")]
-pub fn see_island_host(host: IslandHost, uuid: String, db: State<Arc<Database>>) -> Result<FullResponse, TurnipsError> {
-    let mut context = HashMap::new();
+#[get("/see_islands/<uuid>", rank = 2)]
+pub fn see_islands_uuid_host(
+    host: IslandHost,
+    uuid: String,
+    db: State<Arc<Database>>,
+) -> Result<FullResponse, TurnipsError> {
     let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
         let island = i.client_response_island;
-        context.insert("island", island);
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid_host",
-            context,
+            model::TemplateSeeIslandsUuid {
+                is_logged_in: true,
+                island,
+            },
         )))
     } else {
         Ok(FullResponse::Status(Status::NotFound))
@@ -115,9 +131,10 @@ pub fn see_island_host(host: IslandHost, uuid: String, db: State<Arc<Database>>)
 
 #[get("/create_island", rank = 2)]
 pub fn get_create_island_authorized(_user: User) -> Template {
-    let mut context = HashMap::new();
-    context.insert(0, 0);
-    Template::render("create_island", context)
+    Template::render(
+        "create_island",
+        model::TemplateIsLoggedIn { is_logged_in: true },
+    )
 }
 
 #[get("/create_island", rank = 3)]

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -18,6 +17,7 @@ use uuid::Uuid;
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
 use crate::island::DatabaseIsland;
+use crate::model;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -62,9 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             })
             .and_then(|token| {
                 let claims = token.claims;
-                User::get(&claims.uuid, &mut db.connect())
-                    .ok()
-                    .flatten()
+                User::get(&claims.uuid, &mut db.connect()).ok().flatten()
             })
             .or_forward(())
     }
@@ -98,8 +96,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for IslandHost {
                     request::Outcome::Forward(())
                 }
             }
-            None => request::Outcome::Forward(())
-
+            None => request::Outcome::Forward(()),
         }
     }
 }
@@ -152,9 +149,12 @@ pub fn login_get_redirect(_user: User) -> Redirect {
 
 #[get("/login", rank = 3)]
 pub fn login_get() -> Template {
-    let mut context = HashMap::new();
-    context.insert(0, 0);
-    Template::render("login", context)
+    Template::render(
+        "login",
+        model::TemplateIsLoggedIn {
+            is_logged_in: false,
+        },
+    )
 }
 
 #[post("/login", rank = 2)]
@@ -199,9 +199,12 @@ pub fn signup_get_redirect(_user: User) -> Redirect {
 
 #[get("/signup", rank = 3)]
 pub fn signup_get() -> Template {
-    let mut context = HashMap::new();
-    context.insert(0, 0);
-    Template::render("signup", context)
+    Template::render(
+        "signup",
+        model::TemplateIsLoggedIn {
+            is_logged_in: false,
+        },
+    )
 }
 
 #[post("/signup", rank = 2)]

@@ -9,16 +9,20 @@ mod errors;
 mod island;
 mod model;
 
+use crate::authentication::User;
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 #[get("/")]
-fn index() -> Template {
-    let mut context = HashMap::new();
-    context.insert(0, 0);
-    Template::render("index", context)
+fn index(user: Option<User>) -> Template {
+    Template::render(
+        "index",
+        model::TemplateIsLoggedIn {
+            is_logged_in: user.is_some(),
+        },
+    )
 }
 
 fn main() {
