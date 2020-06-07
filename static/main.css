@@ -1,15 +1,35 @@
-footer {
-}
-
 .navbar {
     height: 30px;
 }
 
 .medium-size {
-    font-size:20pt;
+    font-size: 20pt;
 }
 
 .title {
-    font-size:30pt;
+    font-size: 30pt;
     font-weight: normal;
+}
+
+label {
+    font-weight: normal !important;
+}
+
+.field {
+    margin-bottom: 10px;
+}
+
+.input {
+    width: 25rem;
+    height: 2.5rem;
+}
+
+.input-icon {
+    height: 2.5rem !important;
+    width: 2.5rem !important;
+}
+
+th,
+.tr-body {
+    cursor: pointer;
 }

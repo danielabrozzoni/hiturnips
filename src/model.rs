@@ -23,6 +23,7 @@ pub struct TemplateIsLoggedIn {
 pub struct TemplateSeeIslands {
     pub is_logged_in: bool,
     pub islands: Vec<ClientResponseIsland>,
+    pub my_islands: Vec<ClientResponseIsland>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

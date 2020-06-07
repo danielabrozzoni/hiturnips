@@ -5,13 +5,19 @@
     <form action="/signup" method="post">
         <div class="field">
             <label class="label" for="email">Email</label>
-            <input type="email" placeholder="Enter email" name="email" required>
+            <input class="input" type="email" placeholder="handsome@gmail.com" name="email" required>
         </div>
 
         <div class="field">
             <label class="label" for="password">Password</label>
-            <input type="password" placeholder="Enter Password" id="password" name="password" required>
-            <span class="icon"> <i id="pass-status" class="far fa-eye-slash" aria-hidden="true" onClick="show_hide_psw()" style="margin-left:5px"></i> </span>
+            <input class="input" type="password" placeholder="Ilikebananas123" id="password" name="password" required>
+            <span class="icon input-icon"> <i id="pass-status" class="far fa-eye-slash" aria-hidden="true" onClick="show_hide_psw()" style="margin-left:5px"></i> </span>
+        </div>
+
+        <div class="field">
+            <label class="label" for="name">Your in-game name?</label>
+            <input class="input" type="text" placeholder="HandsomeGuy123" id="name" name="name" required>
+            <p class="help">Don't worry, you'll be able to change it afterwards!</p>
         </div>
         <br>
         <p> Already have an account? <a href="/login"> Login </a> </p>
@@ -24,10 +30,12 @@ function show_hide_psw() {
     var icon = document.getElementById("pass-status");
     if (psw.type == "password") {
         psw.type = "text";
-        icon.className = "far fa-eye";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
     } else {
         psw.type = "password";
-        icon.className = "far fa-eye-slash";
+        icon.classList.add("fa-eye-slash");
+        icon.classList.remove("fa-eye");
     }
 }
 </script>

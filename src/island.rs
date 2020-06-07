@@ -69,18 +69,27 @@ impl Databaseable for DatabaseIsland {
 
 #[get("/see_islands")]
 pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Template, TurnipsError> {
-    let islands = DatabaseIsland::get_all(&mut db.connect())?
-        .into_iter()
-        .map(|i| i.client_response_island)
-        .collect::<Vec<_>>();
-
     let is_logged_in = user.is_some();
+    let (my_islands, islands): (Vec<DatabaseIsland>, Vec<DatabaseIsland>) =
+        DatabaseIsland::get_all(&mut db.connect())?
+            .into_iter()
+            .partition(|i| {
+                is_logged_in
+                    && i.user_uuid == user.as_ref().unwrap().uuid.to_hyphenated().to_string()
+            });
 
     Ok(Template::render(
         "see_islands",
         model::TemplateSeeIslands {
             is_logged_in,
-            islands,
+            islands: islands
+                .into_iter()
+                .map(|i| i.client_response_island)
+                .collect(),
+            my_islands: my_islands
+                .into_iter()
+                .map(|i| i.client_response_island)
+                .collect(),
         },
     ))
 }
@@ -110,7 +119,7 @@ pub fn see_islands_uuid(
 
 #[get("/see_islands/<uuid>", rank = 2)]
 pub fn see_islands_uuid_host(
-    host: IslandHost,
+    _host: IslandHost,
     uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
@@ -150,7 +159,7 @@ pub fn create_island(
     user: User,
     island: Form<ClientCreateIsland>,
     db: State<Arc<Database>>,
-) -> Result<(), TurnipsError> {
+) -> Result<Redirect, TurnipsError> {
     let uuid = Uuid::new_v4();
     let island = island.into_inner();
     let client_response_island = ClientResponseIsland {
@@ -167,14 +176,14 @@ pub fn create_island(
     };
 
     let database_island = DatabaseIsland {
-        dodo: island.dodo,
         user_uuid: user.uuid.to_hyphenated().to_string().clone(),
+        dodo: island.dodo,
         client_response_island,
     };
 
     database_island.add(&mut db.connect())?;
 
-    Ok(())
+    Ok(Redirect::to(format!("/see_islands/{}", uuid)))
 }
 
 #[get("/join_queue/<island_uuid>")]

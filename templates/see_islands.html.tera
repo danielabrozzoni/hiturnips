@@ -5,11 +5,38 @@
         <button class="delete"></button>
         Keep in mind that you'll need to <a href="/signup">create an account</a> and <a href="/login">login into it</a> before joining islands.
         </div>
+    {% elif my_islands %}
+        <div class="medium-size"> Your islands </div>
+        <table class="table is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Island name</th>
+                    <th>Host name</th>
+                    <th>Turnips price</th>
+                    <th>Fees</th>
+                    <th>People in line</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for island in my_islands %}
+                <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.uuid}}'">
+                    <td>{{island.name}}</td>
+                    <td>{{island.host_name}}</td>
+                    <td>{{island.turnips_price}}</td>
+                    <td>{% if island.fee_required %} Required {% else %} Not required {% endif %}</td>
+                    <td>123</td>
+                    {% if island.is_yours %}
+                    <td> <span class="tag is-primary">Your island</span> </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     {% endif %}
+    <div class="medium-size"> Available islands </div>
     <table class="table is-hoverable is-fullwidth">
         <thead>
             <tr>
-                <th>#</th>
                 <th>Island name</th>
                 <th>Host name</th>
                 <th>Turnips price</th>
@@ -19,14 +46,15 @@
         </thead>
         <tbody>
         {% for island in islands %}
-            <tr onClick="window.location.href='/see_islands/{{island.uuid}}'">
-                <td>{{loop.index}}</td>
+            <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.uuid}}'">
                 <td>{{island.name}}</td>
                 <td>{{island.host_name}}</td>
                 <td>{{island.turnips_price}}</td>
-                <td>{{island.fee_required}}</td>
+                <td>{% if island.fee_required %} Required {% else %} Not required {% endif %}</td>
                 <td>123</td>
-                </a>
+                {% if island.is_yours %}
+                <td> <span class="tag is-primary">Your island</span> </td>
+                {% endif %}
             </tr>
         {% endfor %}
         </tbody>
@@ -41,6 +69,21 @@
             });
         });
         });
+
+        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+        const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
+            v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+            )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+        // do the work...
+        document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+            const table = th.closest('table');
+            const tbody = table.querySelector('tbody');
+            Array.from(tbody.querySelectorAll('tr'))
+                .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+                .forEach(tr => tbody.appendChild(tr) );
+        })));
     </script>
 
 {% endblock content %}
