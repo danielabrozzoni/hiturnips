@@ -8,6 +8,7 @@ pub enum TurnipsError {
     SystemTime(std::time::SystemTimeError),
     Argon2(argon2::Error),
     JWT(jsonwebtoken::errors::Error),
+    UUID(uuid::Error),
 }
 
 macro_rules! impl_error {
@@ -31,3 +32,4 @@ impl_error!(redis::RedisError, Redis);
 impl_error!(std::time::SystemTimeError, SystemTime);
 impl_error!(argon2::Error, Argon2);
 impl_error!(jsonwebtoken::errors::Error, JWT);
+impl_error!(uuid::Error, UUID);

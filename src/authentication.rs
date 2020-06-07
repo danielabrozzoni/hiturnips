@@ -24,6 +24,7 @@ pub struct User {
     pub uuid: Uuid,
     pub email: String,
     pub psw_hash: String,
+    pub name: String,
     pub salt: Vec<u8>,
     pub roles: Vec<String>,
 }
@@ -142,6 +143,13 @@ pub struct LoginForm {
     password: String,
 }
 
+#[derive(FromForm)]
+pub struct SignupForm {
+    email: String,
+    password: String,
+    name: String,
+}
+
 #[get("/login", rank = 2)]
 pub fn login_get_redirect(_user: User) -> Redirect {
     Redirect::to("/")
@@ -153,6 +161,7 @@ pub fn login_get() -> Template {
         "login",
         model::TemplateIsLoggedIn {
             is_logged_in: false,
+            name: None,
         },
     )
 }
@@ -203,6 +212,7 @@ pub fn signup_get() -> Template {
         "signup",
         model::TemplateIsLoggedIn {
             is_logged_in: false,
+            name: None,
         },
     )
 }
@@ -212,14 +222,14 @@ pub fn signup_submit_redirect(_user: User) -> Redirect {
     Redirect::to("/")
 }
 
-#[post("/signup", data = "<login>", rank = 3)]
+#[post("/signup", data = "<signup>", rank = 3)]
 pub fn signup_submit(
-    login: Form<LoginForm>,
+    signup: Form<SignupForm>,
     database: State<Arc<Database>>,
 ) -> Result<Redirect, TurnipsError> {
     // TODO error if email already exists
 
-    let password = login.password.as_bytes();
+    let password = signup.password.as_bytes();
     let mut salt = [0u8; 256];
     OsRng.fill_bytes(&mut salt);
     let config = argon2::Config::default();
@@ -228,7 +238,8 @@ pub fn signup_submit(
 
     let user = User {
         uuid: Uuid::new_v4(),
-        email: login.email.clone(),
+        email: signup.email.clone(),
+        name: signup.name.clone(),
         psw_hash,
         salt: salt.to_vec(),
         roles: roles.to_vec(),

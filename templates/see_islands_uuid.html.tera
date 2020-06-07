@@ -1,22 +1,4 @@
-{% extends "base_template" %}
-{% block content %}
-<p>
-Join {{island.host_name}} on {{island.name}}! 
-<br>
-<br>
-Turnip price is {{island.turnips_price}}. 
-<br>
-{% if island.fee_required%}
-Fees are <bold> required </bold> on this island!
-{% else %}
-Fees <bold> are not required </bold> on this island!
-{% endif %}
-<div class="box"> blabla </div>
-<br>
-The host is wearing...
-<div class="box"> blabla </div>
-You'll find Nook's shop...
-<div class="box"> blabla </div>
+{% extends "see_islands_base" %}
+{% block buttons %}
 <button class="button" onClick='window.location.href="/rank/{{island.uuid}}"'>Join!</button>
-</p>
-{% endblock content%}
+{% endblock buttons%}

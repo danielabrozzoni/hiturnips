@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -110,6 +109,7 @@ pub fn see_islands_uuid(
             model::TemplateSeeIslandsUuid {
                 is_logged_in,
                 island,
+                name: user.map(|u| u.name),
             },
         )))
     } else {
@@ -131,6 +131,7 @@ pub fn see_islands_uuid_host(
             model::TemplateSeeIslandsUuid {
                 is_logged_in: true,
                 island,
+                name: None,
             },
         )))
     } else {
@@ -139,10 +140,13 @@ pub fn see_islands_uuid_host(
 }
 
 #[get("/create_island", rank = 2)]
-pub fn get_create_island_authorized(_user: User) -> Template {
+pub fn get_create_island_authorized(user: User) -> Template {
     Template::render(
-        "create_island",
-        model::TemplateIsLoggedIn { is_logged_in: true },
+        "create_edit_island",
+        model::TemplateIsLoggedIn {
+            is_logged_in: true,
+            name: Some(user.name),
+        },
     )
 }
 
@@ -186,12 +190,13 @@ pub fn create_island(
     Ok(Redirect::to(format!("/see_islands/{}", uuid)))
 }
 
-#[get("/join_queue/<island_uuid>")]
+#[post("/join_queue/<island_uuid>", data="<user_name>")]
 pub fn join_queue(
     user: User,
+    user_name: String,
     island_uuid: String,
     db: State<Arc<Database>>,
-) -> Result<Redirect, TurnipsError> {
+) -> Result<(), TurnipsError> {
     // TODO: check that user has not joined more than *limit* islands
 
     let _: () = redis::Cmd::new()
@@ -206,7 +211,14 @@ pub fn join_queue(
         .arg(user.get_key())
         .query(&mut db.connect())?;
 
-    Ok(Redirect::to(format!("/rank/{}", island_uuid)))
+    let _: () = redis::Cmd::new()
+        .arg("HSET")
+        .arg(format!("queue_names:{}", island_uuid))
+        .arg(user.get_key())
+        .arg(user_name)
+        .query(&mut db.connect())?;
+
+    Ok(())
 }
 
 #[get("/leave_queue/<island_uuid>")]
@@ -220,11 +232,18 @@ pub fn leave_queue(
         .arg(format!("queue:{}", island_uuid))
         .arg(user.get_key())
         .query(&mut db.connect())?;
+
+    let _: () = redis::Cmd::new()
+        .arg("HDEL")
+        .arg(format!("queue_names:{}", island_uuid))
+        .arg(user.get_key())
+        .query(&mut db.connect())?;
+
     Ok(())
 }
 
+/*
 // TODO remove this template
-#[get("/rank/<island_uuid>")]
 pub fn get_rank_template(
     user: User,
     island_uuid: String,
@@ -235,7 +254,9 @@ pub fn get_rank_template(
 
     Ok(Template::render("users_queue", context))
 }
+*/
 
+//#[get("/rank/<island_uuid>")]
 pub fn get_rank(
     user: User,
     island_uuid: String,
@@ -249,4 +270,87 @@ pub fn get_rank(
     Ok(rank)
 }
 
-//pub fn get_dodo() {}
+#[get("/delete/<island_uuid>")]
+pub fn delete_island(
+    _island_host: IslandHost,
+    island_uuid: String,
+    db: State<Arc<Database>>,
+) -> Result<(), Status> {
+    let mut connection = db.connect();
+    let island = DatabaseIsland::get(&island_uuid, &mut connection)?;
+    if let Some(i) = island {
+        i.delete(&mut connection)?;
+        Ok(())
+    } else {
+        Err(Status::NotFound)
+    }
+}
+
+#[get("/dodo/<island_uuid>")]
+pub fn get_dodo(
+    user: User,
+    island_uuid: String,
+    db: State<Arc<Database>>,
+) -> Result<FullResponse, TurnipsError> {
+    let island = DatabaseIsland::get(&island_uuid, &mut db.connect())?;
+    if let Some(i) = island {
+        let rank = get_rank(user, island_uuid, db)?;
+        match rank {
+            Some(r) if r < i.client_response_island.max_visitors_allowed as u32 => Ok(FullResponse::StringData(i.dodo)),
+            _ => Ok(FullResponse::Status(Status::NotFound)),
+        }
+    } else {
+        Ok(FullResponse::Status(Status::NotFound))
+    }
+}
+
+#[get("/edit_island/<island_uuid>")]
+pub fn get_edit_island(
+    _island_host: IslandHost,
+    island_uuid: String,
+    db: State<Arc<Database>>,
+) -> Result<FullResponse, TurnipsError> {
+    let island = DatabaseIsland::get(&island_uuid, &mut db.connect())?;
+    if let Some(i) = island {
+        Ok(FullResponse::Template(Template::render(
+            "create_edit_island",
+            model::TemplateEditIsland {
+                island: i,
+            },
+        )))
+    } else {
+        Ok(FullResponse::Status(Status::NotFound))
+    }
+}
+
+#[post("/edit_island/<island_uuid>", data = "<island>")]
+pub fn edit_island(
+    user: User,
+    island: Form<ClientCreateIsland>,
+    island_uuid: String,
+    db: State<Arc<Database>>,
+) -> Result<Redirect, TurnipsError> {
+    let island = island.into_inner();
+    let client_response_island = ClientResponseIsland {
+        uuid: Uuid::parse_str(&island_uuid)?,
+        turnips_price: island.turnips_price,
+        fee_required: island.fee_required,
+        fee_description: island.fee_description,
+        map_description: island.map_description,
+        host_description: island.host_description,
+        name: island.name,
+        host_name: island.host_name,
+        max_queue_size: island.max_queue_size,
+        max_visitors_allowed: island.max_visitors_allowed,
+    };
+
+    let database_island = DatabaseIsland {
+        user_uuid: user.uuid.to_hyphenated().to_string().clone(),
+        dodo: island.dodo,
+        client_response_island,
+    };
+
+    database_island.add(&mut db.connect())?;
+
+    Ok(Redirect::to(format!("/see_islands/{}", island_uuid)))
+}

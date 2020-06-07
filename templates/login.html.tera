@@ -5,12 +5,12 @@
     <form action="/login" method="post">
         <div class="field">
             <label class="label" for="email">Email</label>
-            <input class="input" type="email" placeholder="Enter email" name="email" required>
+            <input class="input" type="email" placeholder="mamaboy87@live.en" name="email" required>
         </div>
 
         <div class="field">
             <label class="label" for="password">Password</label>
-            <input class="input" type="password" placeholder="Enter Password" name="password" required>
+            <input class="input" type="password" placeholder="stronglongpassword" name="password" required>
         </div>
         <br>
         <p> No account yet? <a href="/signup"> Signup </a> </p>

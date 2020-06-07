@@ -1,0 +1,69 @@
+{% extends "base_template" %}
+{% block content %}
+    {% if island %}
+    <form action="/edit_island/{{island.client_response_island.uuid}}" method="POST">
+    {% else %}
+    <form action="/create_island" method="POST">
+    {% endif %}
+        <div class="field">
+            <label for="name" class="label">Island name</label>
+            <input type="text" name="name" class="input" {% if island %} value="{{island.client_response_island.name}}" {% endif %} required>
+        </div>
+        <div class="field">
+            <label for="host_name" class="label">Host in-game name</label>
+            <input type="text" name="host_name" class="input" {% if island %} value="{{island.client_response_island.host_name}}" {% else %} value="{{name}}" {% endif %} required>
+        </div>
+        <div class="field">
+            <label for="dodo" class="label">Your DODO code?</label>
+            <input type="text" name="dodo" class="input" {% if island %} value="{{island.dodo}}" {% endif %} required>
+        </div>
+        <div class="field">
+            <label for="turnips_price" class="label">Turnips price</label>
+            <input type="number" name="turnips_price" class="input" {% if island %} value="{{island.client_response_island.turnips_price}}" {% endif %} required min="1" max="700">
+        </div>
+        <div class="field">
+            <label for="max_visitors_allowed" class="label">Max number of visitors allowed in your island at the same time</label>
+            <input type="number" name="max_visitors_allowed" class="input" {% if island %} value="{{island.client_response_island.max_visitors_allowed}}" {% endif %} min="1" max="8" required>
+        </div>
+        <div class="field">
+            <label for="max_queue_size" class="label">Max number of people waiting in queue</label>
+            <input type="number" name="max_queue_size" class="input" {% if island %} value="{{island.client_response_island.max_queue_size}}" {% endif %} min="10" max="150" required>
+        </div>
+        <div class="field">
+            <label for="fee_required" class="label">Are fees required?</label>
+            <div class="select">
+                <select name="fee_required">
+                    <option value="true" {% if island and island.fee_required %} selected {% endif %}>Yes, they are required!</option>
+                    <option value="false" {% if island and not island.fee_required %} selected {% endif %} >They're not required, but appreciated.</option>
+                </select>
+            </div>
+        </div>
+        <div class="field">
+            <label for="fee_description" class="label">Optionally, insert a short description regarding fees - what are you looking for? NMT, bells, DIY...?</label>
+            <textarea class="textarea" name="fee_description" placeholder="Don't be too demanding, or people won't join!">{% if island %}{{island.client_response_island.fee_description}}{% endif %}</textarea>
+        </div>
+        <div class="field">
+            <label for="host_description" class="label">Optionally, describe how your character is dressed, so visitors can recognize you!</label>
+            <textarea class="textarea" name="host_description" placeholder="I am wearing blue shorts and a mask, because COVID ain't joking">{% if island %}{{island.client_response_island.host_description}}{% endif %}</textarea>
+        </div>
+        <div class="field">
+            <label for="map_description" class="label">If you're not sure that people will find Nook's cranny easily, describe here its position on the map.</label>
+            <textarea class="textarea" name="map_description" placeholder="Nook's cranny is on the beach, left to the airport.">{% if island %}{{island.client_response_island.map_description}}{% endif %}</textarea>
+        </div>
+
+
+        <div class="field is-grouped">
+            <div class="control">
+                {% if island %}
+                <button class="button is-primary">Edit island!</button>
+                {% else %}
+                <button class="button is-primary">Create island!</button>
+                {% endif %}
+            </div>
+            <div class="control">
+                <button class="button is-primary is-light">Cancel</button>
+            </div>
+        </div>
+    </form>
+
+{% endblock content%}
