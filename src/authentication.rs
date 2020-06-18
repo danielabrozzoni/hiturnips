@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
-use crate::island::DatabaseIsland;
+use crate::island::PrivateInfoIsland;
 use crate::model;
 
 #[derive(Serialize, Deserialize)]
@@ -87,7 +87,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for IslandHost {
             _ => "".to_string(),
         };
 
-        let island = DatabaseIsland::get(&island_uuid, &mut db.connect()).unwrap();
+        let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect()).unwrap();
 
         match island {
             Some(i) => {
@@ -181,7 +181,7 @@ pub fn login_submit(
 
     let user: Option<User> = User::get_by_index(("email", &login.email), &mut connection).unwrap();
 
-    if let None = user {
+    if user.is_none() {
         return Err(Flash::error(Redirect::to("/login"), "Invalid username."));
     }
 

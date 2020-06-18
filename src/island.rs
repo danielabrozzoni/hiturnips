@@ -8,14 +8,16 @@ use rocket::response::{Flash, Redirect};
 use rocket::State;
 use rocket_contrib::templates::Template;
 use uuid::Uuid;
+use serde_json::json;
 
 use crate::authentication::{IslandHost, User};
 use crate::db::{Database, Databaseable};
 use crate::errors::TurnipsError;
 use crate::model::{self, FullResponse};
 
+/// Holds data which can be modified by the owner of the island.
 #[derive(Debug, Serialize, Deserialize, FromForm)]
-pub struct ClientCreateIsland {
+pub struct ClientCreateEditIsland {
     pub turnips_price: u16,
     pub fee_required: bool,
     pub fee_description: Option<String>,
@@ -24,14 +26,14 @@ pub struct ClientCreateIsland {
     pub name: String,
     pub host_name: String,
     pub dodo: String,
-    pub max_queue_size: u8,
+    pub max_line_size: u8,
     pub max_visitors_allowed: u8,
-    //rating?
-    //queue?
 }
 
+/// Holds general info regarding the island, which can be seen by everyone.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ClientResponseIsland {
+// TODO change name
+pub struct PublicInfoIsland {
     pub uuid: Uuid,
     pub turnips_price: u16,
     pub fee_required: bool,
@@ -40,25 +42,36 @@ pub struct ClientResponseIsland {
     pub host_description: Option<String>,
     pub name: String,
     pub host_name: String,
-    pub max_queue_size: u8,
+    pub max_line_size: u8,
     pub max_visitors_allowed: u8,
 }
 
+/// Holds general info regarding the island and current state of the line.
+/// Used in see_islands/ and see_islands/<uuid> calls
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DatabaseIsland {
+pub struct ClientSeeIsland {
+    pub public_info_island: PublicInfoIsland,
+    pub people_in_line: u8,
+    pub eta_mins: u16,
+}
+
+/// Holds both general and private info regarding the island.
+/// Used for storing the island in the database.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PrivateInfoIsland {
     pub user_uuid: String,
     pub dodo: String,
-    pub client_response_island: ClientResponseIsland,
+    pub public_info_island: PublicInfoIsland,
     //rating?
 }
 
-impl Databaseable for DatabaseIsland {
+impl Databaseable for PrivateInfoIsland {
     fn get_table() -> &'static str {
         "island"
     }
 
     fn get_key(&self) -> String {
-        self.client_response_island.uuid.to_hyphenated().to_string()
+        self.public_info_island.uuid.to_hyphenated().to_string()
     }
 
     fn get_indexes(&self) -> Vec<(&'static str, String)> {
@@ -69,8 +82,8 @@ impl Databaseable for DatabaseIsland {
 #[get("/see_islands")]
 pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Template, TurnipsError> {
     let is_logged_in = user.is_some();
-    let (my_islands, islands): (Vec<DatabaseIsland>, Vec<DatabaseIsland>) =
-        DatabaseIsland::get_all(&mut db.connect())?
+    let (my_islands, islands): (Vec<PrivateInfoIsland>, Vec<PrivateInfoIsland>) =
+        PrivateInfoIsland::get_all(&mut db.connect())?
             .into_iter()
             .partition(|i| {
                 is_logged_in
@@ -83,11 +96,19 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
             is_logged_in,
             islands: islands
                 .into_iter()
-                .map(|i| i.client_response_island)
+                .map(|i| ClientSeeIsland {
+                    people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+                    eta_mins: 10,
+                    public_info_island: i.public_info_island,
+                })
                 .collect(),
             my_islands: my_islands
                 .into_iter()
-                .map(|i| i.client_response_island)
+                .map(|i| ClientSeeIsland {
+                    people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+                    eta_mins: 10,
+                    public_info_island: i.public_info_island,
+                })
                 .collect(),
         },
     ))
@@ -101,9 +122,13 @@ pub fn see_islands_uuid(
 ) -> Result<FullResponse, TurnipsError> {
     let is_logged_in = user.is_some();
 
-    let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
+    let island = PrivateInfoIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
-        let island = i.client_response_island;
+        let island = ClientSeeIsland {
+            people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+            eta_mins: 15,
+            public_info_island: i.public_info_island,
+        };
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid",
             model::TemplateSeeIslandsUuid {
@@ -123,9 +148,13 @@ pub fn see_islands_uuid_host(
     uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
-    let island = DatabaseIsland::get(&uuid, &mut db.connect())?;
+    let island = PrivateInfoIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
-        let island = i.client_response_island;
+        let island = ClientSeeIsland {
+            people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+            eta_mins: 15,
+            public_info_island: i.public_info_island,
+        };
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid_host",
             model::TemplateSeeIslandsUuid {
@@ -161,12 +190,12 @@ pub fn get_create_island() -> rocket::response::Flash<Redirect> {
 #[post("/create_island", data = "<island>")]
 pub fn create_island(
     user: User,
-    island: Form<ClientCreateIsland>,
+    island: Form<ClientCreateEditIsland>,
     db: State<Arc<Database>>,
 ) -> Result<Redirect, TurnipsError> {
     let uuid = Uuid::new_v4();
     let island = island.into_inner();
-    let client_response_island = ClientResponseIsland {
+    let public_info_island = PublicInfoIsland {
         uuid,
         turnips_price: island.turnips_price,
         fee_required: island.fee_required,
@@ -175,14 +204,14 @@ pub fn create_island(
         host_description: island.host_description,
         name: island.name,
         host_name: island.host_name,
-        max_queue_size: island.max_queue_size,
+        max_line_size: island.max_line_size,
         max_visitors_allowed: island.max_visitors_allowed,
     };
 
-    let database_island = DatabaseIsland {
-        user_uuid: user.uuid.to_hyphenated().to_string().clone(),
+    let database_island = PrivateInfoIsland {
+        user_uuid: user.uuid.to_hyphenated().to_string(),
         dodo: island.dodo,
-        client_response_island,
+        public_info_island,
     };
 
     database_island.add(&mut db.connect())?;
@@ -190,18 +219,18 @@ pub fn create_island(
     Ok(Redirect::to(format!("/see_islands/{}", uuid)))
 }
 
-#[post("/join_queue/<island_uuid>", data="<user_name>")]
-pub fn join_queue(
+#[post("/join_line/<island_uuid>", data="<user_name>")]
+pub fn join_line(
     user: User,
     user_name: String,
     island_uuid: String,
     db: State<Arc<Database>>,
-) -> Result<(), TurnipsError> {
+) -> Result<FullResponse, TurnipsError> {
     // TODO: check that user has not joined more than *limit* islands
 
     let _: () = redis::Cmd::new()
         .arg("ZADD")
-        .arg(format!("queue:{}", island_uuid))
+        .arg(format!("line:{}", island_uuid))
         .arg("NX")
         .arg(
             SystemTime::now()
@@ -213,61 +242,72 @@ pub fn join_queue(
 
     let _: () = redis::Cmd::new()
         .arg("HSET")
-        .arg(format!("queue_names:{}", island_uuid))
+        .arg(format!("line_names:{}", island_uuid))
         .arg(user.get_key())
         .arg(user_name)
         .query(&mut db.connect())?;
 
-    Ok(())
+    get_rank(user, island_uuid, db)
 }
 
-#[get("/leave_queue/<island_uuid>")]
-pub fn leave_queue(
+#[get("/leave_line/<island_uuid>")]
+pub fn leave_line(
     user: User,
     island_uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<(), TurnipsError> {
     let _: () = redis::Cmd::new()
         .arg("ZREM")
-        .arg(format!("queue:{}", island_uuid))
+        .arg(format!("line:{}", island_uuid))
         .arg(user.get_key())
         .query(&mut db.connect())?;
 
     let _: () = redis::Cmd::new()
         .arg("HDEL")
-        .arg(format!("queue_names:{}", island_uuid))
+        .arg(format!("line_names:{}", island_uuid))
         .arg(user.get_key())
         .query(&mut db.connect())?;
 
     Ok(())
 }
 
-/*
-// TODO remove this template
-pub fn get_rank_template(
+pub fn people_in_line(
+    island_uuid: String,
+    db: &State<Arc<Database>>,
+) -> Result<u8, TurnipsError> {
+    let people_in_line: u8 = redis::Cmd::new()
+        .arg("ZCOUNT")
+        .arg(format!("line:{}", island_uuid))
+        .arg("-inf")
+        .arg("+inf")
+        .query(&mut db.connect())?;
+    Ok(people_in_line)
+}
+
+pub fn rank(
     user: User,
     island_uuid: String,
     db: State<Arc<Database>>,
-) -> Result<Template, TurnipsError> {
-    let mut context = HashMap::new();
-    context.insert("rank", get_rank(user, island_uuid, db)?);
-
-    Ok(Template::render("users_queue", context))
+) -> Result<Option<u8>, TurnipsError> {
+    let rank: Option<u8> = redis::Cmd::new()
+        .arg("ZRANK")
+        .arg(format!("line:{}", island_uuid))
+        .arg(user.get_key())
+        .query(&mut db.connect())?;
+    Ok(rank)
 }
-*/
 
-//#[get("/rank/<island_uuid>")]
+#[get("/rank/<island_uuid>")]
 pub fn get_rank(
     user: User,
     island_uuid: String,
     db: State<Arc<Database>>,
-) -> Result<Option<u32>, TurnipsError> {
-    let rank: Option<u32> = redis::Cmd::new()
-        .arg("ZRANK")
-        .arg(format!("queue:{}", island_uuid))
-        .arg(user.get_key())
-        .query(&mut db.connect())?;
-    Ok(rank)
+) -> Result<FullResponse, TurnipsError> {
+    let rank = rank(user, island_uuid, db)?;
+    match rank {
+        Some(r) => Ok(FullResponse::StringData(json!(model::GetRank{rank: r}).to_string())),
+        None => Ok(FullResponse::Status(Status::NotFound)),
+    }
 }
 
 #[get("/delete/<island_uuid>")]
@@ -277,7 +317,7 @@ pub fn delete_island(
     db: State<Arc<Database>>,
 ) -> Result<(), Status> {
     let mut connection = db.connect();
-    let island = DatabaseIsland::get(&island_uuid, &mut connection)?;
+    let island = PrivateInfoIsland::get(&island_uuid, &mut connection)?;
     if let Some(i) = island {
         i.delete(&mut connection)?;
         Ok(())
@@ -292,11 +332,11 @@ pub fn get_dodo(
     island_uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
-    let island = DatabaseIsland::get(&island_uuid, &mut db.connect())?;
+    let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect())?;
     if let Some(i) = island {
-        let rank = get_rank(user, island_uuid, db)?;
+        let rank = rank(user, island_uuid, db)?;
         match rank {
-            Some(r) if r < i.client_response_island.max_visitors_allowed as u32 => Ok(FullResponse::StringData(i.dodo)),
+            Some(r) if r < i.public_info_island.max_visitors_allowed => Ok(FullResponse::StringData(i.dodo)),
             _ => Ok(FullResponse::Status(Status::NotFound)),
         }
     } else {
@@ -310,12 +350,23 @@ pub fn get_edit_island(
     island_uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
-    let island = DatabaseIsland::get(&island_uuid, &mut db.connect())?;
+    let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect())?;
     if let Some(i) = island {
         Ok(FullResponse::Template(Template::render(
             "create_edit_island",
             model::TemplateEditIsland {
-                island: i,
+                island: ClientCreateEditIsland {
+                    turnips_price: i.public_info_island.turnips_price,
+                    fee_required: i.public_info_island.fee_required,
+                    fee_description: i.public_info_island.fee_description,
+                    map_description: i.public_info_island.map_description,
+                    host_description: i.public_info_island.host_description,
+                    name: i.public_info_island.name,
+                    host_name: i.public_info_island.host_name,
+                    dodo: i.dodo,
+                    max_line_size: i.public_info_island.max_line_size,
+                    max_visitors_allowed: i.public_info_island.max_visitors_allowed,
+                },
             },
         )))
     } else {
@@ -326,12 +377,12 @@ pub fn get_edit_island(
 #[post("/edit_island/<island_uuid>", data = "<island>")]
 pub fn edit_island(
     user: User,
-    island: Form<ClientCreateIsland>,
+    island: Form<ClientCreateEditIsland>,
     island_uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<Redirect, TurnipsError> {
     let island = island.into_inner();
-    let client_response_island = ClientResponseIsland {
+    let public_info_island = PublicInfoIsland {
         uuid: Uuid::parse_str(&island_uuid)?,
         turnips_price: island.turnips_price,
         fee_required: island.fee_required,
@@ -340,17 +391,17 @@ pub fn edit_island(
         host_description: island.host_description,
         name: island.name,
         host_name: island.host_name,
-        max_queue_size: island.max_queue_size,
+        max_line_size: island.max_line_size,
         max_visitors_allowed: island.max_visitors_allowed,
     };
 
-    let database_island = DatabaseIsland {
-        user_uuid: user.uuid.to_hyphenated().to_string().clone(),
+    let private_info_island = PrivateInfoIsland {
+        user_uuid: user.uuid.to_hyphenated().to_string(),
         dodo: island.dodo,
-        client_response_island,
+        public_info_island,
     };
 
-    database_island.add(&mut db.connect())?;
+    private_info_island.add(&mut db.connect())?;
 
     Ok(Redirect::to(format!("/see_islands/{}", island_uuid)))
 }
