@@ -54,7 +54,7 @@
         </div>
 
         <div class="hero-body">
-            <section class="section" style="min-height: 60vh; width: 100%;">
+            <section class="section" style="min-height: 60vh; position:relative; width: 100%;">
                 {% block content %}{% endblock content %}
             </section>
         </div>

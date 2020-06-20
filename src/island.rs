@@ -53,6 +53,7 @@ pub struct ClientSeeIsland {
     pub public_info_island: PublicInfoIsland,
     pub people_in_line: u8,
     pub eta_mins: u16,
+    pub rank: Option<u8>,
 }
 
 /// Holds both general and private info regarding the island.
@@ -99,6 +100,7 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
                 .map(|i| ClientSeeIsland {
                     people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
                     eta_mins: 10,
+                    rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
                 })
                 .collect(),
@@ -107,6 +109,7 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
                 .map(|i| ClientSeeIsland {
                     people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
                     eta_mins: 10,
+                    rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
                 })
                 .collect(),
@@ -127,6 +130,7 @@ pub fn see_islands_uuid(
         let island = ClientSeeIsland {
             people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
             eta_mins: 15,
+            rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
             public_info_island: i.public_info_island,
         };
         Ok(FullResponse::Template(Template::render(
@@ -153,6 +157,7 @@ pub fn see_islands_uuid_host(
         let island = ClientSeeIsland {
             people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
             eta_mins: 15,
+            rank: None,
             public_info_island: i.public_info_island,
         };
         Ok(FullResponse::Template(Template::render(
@@ -285,16 +290,19 @@ pub fn people_in_line(
 }
 
 pub fn rank(
-    user: User,
-    island_uuid: String,
-    db: State<Arc<Database>>,
+    user: &User,
+    island_uuid: &String,
+    db: &State<Arc<Database>>,
 ) -> Result<Option<u8>, TurnipsError> {
     let rank: Option<u8> = redis::Cmd::new()
         .arg("ZRANK")
         .arg(format!("line:{}", island_uuid))
         .arg(user.get_key())
         .query(&mut db.connect())?;
-    Ok(rank)
+    match rank {
+        Some(r) => Ok(Some(r + 1)),
+        None => Ok(None)
+    }
 }
 
 #[get("/rank/<island_uuid>")]
@@ -303,7 +311,7 @@ pub fn get_rank(
     island_uuid: String,
     db: State<Arc<Database>>,
 ) -> Result<FullResponse, TurnipsError> {
-    let rank = rank(user, island_uuid, db)?;
+    let rank = rank(&user, &island_uuid, &db)?;
     match rank {
         Some(r) => Ok(FullResponse::StringData(json!(model::GetRank{rank: r}).to_string())),
         None => Ok(FullResponse::Status(Status::NotFound)),
@@ -334,7 +342,7 @@ pub fn get_dodo(
 ) -> Result<FullResponse, TurnipsError> {
     let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect())?;
     if let Some(i) = island {
-        let rank = rank(user, island_uuid, db)?;
+        let rank = rank(&user, &island_uuid, &db)?;
         match rank {
             Some(r) if r < i.public_info_island.max_visitors_allowed => Ok(FullResponse::StringData(i.dodo)),
             _ => Ok(FullResponse::Status(Status::NotFound)),
@@ -367,6 +375,7 @@ pub fn get_edit_island(
                     max_line_size: i.public_info_island.max_line_size,
                     max_visitors_allowed: i.public_info_island.max_visitors_allowed,
                 },
+                island_uuid,
             },
         )))
     } else {

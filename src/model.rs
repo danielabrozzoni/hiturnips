@@ -38,6 +38,7 @@ pub struct TemplateSeeIslandsUuid {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateEditIsland {
     pub island: island::ClientCreateEditIsland,
+    pub island_uuid: String,
 }
 
 // JSON responses

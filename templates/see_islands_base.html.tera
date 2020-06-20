@@ -14,7 +14,7 @@ Fees are <b> not required </b> on this island, but appreciated. <br>
 <br>
 {% if island.public_info_island.fee_description %}
     The host would like to have...
-    <div class="box">{{ island.public_info_island.fee_description }}</div>
+    <div class="box"> {{ island.public_info_island.fee_description }} </div>
 {% endif %}
 {% if island.public_info_island.host_description %}
     The host is wearing...
@@ -24,7 +24,9 @@ Fees are <b> not required </b> on this island, but appreciated. <br>
     Regarding Nook's Cranny...
     <div class="box"> {{ island.public_info_island.map_description }} </div>
 {% endif %}
-<br>
-{% block buttons %}{% endblock buttons %}
 </p>
+{% block line_info %} {% endblock line_info %}
+<div class = "buttons" style="position: absolute; bottom: 0;">
+    {% block buttons %}{% endblock buttons %}
+</div>
 {% endblock content%}
