@@ -1,0 +1,30 @@
+{% extends "base_template" %}
+{% block content %}
+<p class = "title">
+Join {{ island.public_info_island.host_name }} on {{ island.public_info_island.name }}!
+</p>
+<p>
+Turnips price is {{ island.public_info_island.turnips_price }}.
+<br>
+{% if island.public_info_island.fee_required%}
+Fees are <strong> required </strong> on this island! <br>
+{% else %}
+Fees are <b> not required </b> on this island, but appreciated. <br>
+{% endif %}
+<br>
+{% if island.public_info_island.fee_description %}
+    The host would like to have...
+    <div class="box">{{ island.public_info_island.fee_description }}</div>
+{% endif %}
+{% if island.public_info_island.host_description %}
+    The host is wearing...
+    <div class="box"> {{ island.public_info_island.host_description }} </div>
+{% endif %}
+{% if island.public_info_island.map_description %}
+    Regarding Nook's Cranny...
+    <div class="box"> {{ island.public_info_island.map_description }} </div>
+{% endif %}
+<br>
+{% block buttons %}{% endblock buttons %}
+</p>
+{% endblock content%}

@@ -1,5 +1,5 @@
 {% extends "see_islands_base" %}
 {% block buttons %}
-<button class="button" onClick='window.location.href="/edit_island/{{island.uuid}}"'>Edit</button>
-<button class="button" onClick='window.location.href="/delete/{{island.uuid}}"'>Delete</button>
+<button class="button" onClick='window.location.href="/edit_island/{{island.public_info_island.uuid}}"'>Edit</button>
+<button class="button" onClick='window.location.href="/delete/{{island.public_info_island.uuid}}"'>Delete</button>
 {% endblock buttons%}

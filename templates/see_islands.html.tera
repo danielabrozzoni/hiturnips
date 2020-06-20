@@ -15,19 +15,18 @@
                     <th>Turnips price</th>
                     <th>Fees</th>
                     <th>People in line</th>
+                    <th>ETA</th>
                 </tr>
             </thead>
             <tbody>
             {% for island in my_islands %}
-                <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.uuid}}'">
-                    <td>{{island.name}}</td>
-                    <td>{{island.host_name}}</td>
-                    <td>{{island.turnips_price}}</td>
-                    <td>{% if island.fee_required %} Required {% else %} Not required {% endif %}</td>
-                    <td>123</td>
-                    {% if island.is_yours %}
-                    <td> <span class="tag is-primary">Your island</span> </td>
-                    {% endif %}
+                <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.public_info_island.uuid}}'">
+                    <td>{{island.public_info_island.name}}</td>
+                    <td>{{island.public_info_island.host_name}}</td>
+                    <td>{{island.public_info_island.turnips_price}}</td>
+                    <td>{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
+                    <td>{{island.people_in_line}}</td>
+                    <td>{{island.eta_mins}} minutes</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -42,19 +41,18 @@
                 <th>Turnips price</th>
                 <th>Fees</th>
                 <th>People in line</th>
+                <th>ETA</th>
             </tr>
         </thead>
         <tbody>
         {% for island in islands %}
-            <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.uuid}}'">
-                <td>{{island.name}}</td>
-                <td>{{island.host_name}}</td>
-                <td>{{island.turnips_price}}</td>
-                <td>{% if island.fee_required %} Required {% else %} Not required {% endif %}</td>
-                <td>123</td>
-                {% if island.is_yours %}
-                <td> <span class="tag is-primary">Your island</span> </td>
-                {% endif %}
+            <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.public_info_island.uuid}}'">
+                <td>{{island.public_info_island.name}}</td>
+                <td>{{island.public_info_island.host_name}}</td>
+                <td>{{island.public_info_island.turnips_price}}</td>
+                <td>{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
+                <td>{{island.people_in_line}}</td>
+                <td>{{island.eta_mins}} minutes</td>
             </tr>
         {% endfor %}
         </tbody>

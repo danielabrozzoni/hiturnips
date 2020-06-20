@@ -26,8 +26,8 @@
             <input type="number" name="max_visitors_allowed" class="input" {% if island %} value="{{island.client_response_island.max_visitors_allowed}}" {% endif %} min="1" max="8" required>
         </div>
         <div class="field">
-            <label for="max_queue_size" class="label">Max number of people waiting in queue</label>
-            <input type="number" name="max_queue_size" class="input" {% if island %} value="{{island.client_response_island.max_queue_size}}" {% endif %} min="10" max="150" required>
+            <label for="max_line_size" class="label">Max number of people waiting in line</label>
+            <input type="number" name="max_line_size" class="input" {% if island %} value="{{island.client_response_island.max_line_size}}" {% endif %} min="10" max="150" required>
         </div>
         <div class="field">
             <label for="fee_required" class="label">Are fees required?</label>
