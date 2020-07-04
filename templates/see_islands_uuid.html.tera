@@ -6,15 +6,18 @@
     {% else %}
         You are number #{{island.rank}} in line. <br>
     {% endif %}
+    {% if island.dodo %}
+        <div class="notification is-primary is-light">
+            Yo, it's your turn! <br>
+            DODO code: {{island.dodo}}
+        </div>
+    {% endif %}
 {% endblock line_info %}
 {% block buttons %}
 {% if not island.rank %}
     <button class="button" onClick='join()'>Join!</button>
 {% else %}
     <button class="button is-danger" onClick='leave_line()'>Leave line :(</button>
-    {% if island.rank < island.public_info_island.max_visitors_allowed %}
-        <button class="button" onClick='get_dodo()'>Give me the DODO code!</button>
-    {% endif %}
 {% endif %}
 
 <script>
@@ -33,7 +36,7 @@
         .catch(error => console.log(error))
     }
 
-    function leave_line(){
+    function leave_line() {
         fetch("/leave_line/{{island.public_info_island.uuid}}", {
             method: "GET",
         }).then(response => {

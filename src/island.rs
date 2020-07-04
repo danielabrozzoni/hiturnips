@@ -54,6 +54,7 @@ pub struct ClientSeeIsland {
     pub people_in_line: u8,
     pub eta_mins: u16,
     pub rank: Option<u8>,
+    pub dodo: Option<String>,
 }
 
 /// Holds both general and private info regarding the island.
@@ -98,19 +99,21 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
             islands: islands
                 .into_iter()
                 .map(|i| ClientSeeIsland {
-                    people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+                    people_in_line: people_in_line(&i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
                     eta_mins: 10,
                     rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
+                    dodo: None,
                 })
                 .collect(),
             my_islands: my_islands
                 .into_iter()
                 .map(|i| ClientSeeIsland {
-                    people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+                    people_in_line: people_in_line(&i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
                     eta_mins: 10,
                     rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
+                    dodo: None,
                 })
                 .collect(),
         },
@@ -128,10 +131,11 @@ pub fn see_islands_uuid(
     let island = PrivateInfoIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
         let island = ClientSeeIsland {
-            people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+            people_in_line: people_in_line(&uuid, &db).unwrap(),
             eta_mins: 15,
-            rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
+            rank: if user.is_some() { rank(user.as_ref().unwrap(), &uuid, &db).unwrap() } else { None },
             public_info_island: i.public_info_island,
+            dodo: if user.is_some() { get_dodo(user.as_ref().unwrap(), &uuid, &db) } else { None },
         };
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid",
@@ -155,10 +159,11 @@ pub fn see_islands_uuid_host(
     let island = PrivateInfoIsland::get(&uuid, &mut db.connect())?;
     if let Some(i) = island {
         let island = ClientSeeIsland {
-            people_in_line: people_in_line(i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
+            people_in_line: people_in_line(&uuid, &db).unwrap(),
             eta_mins: 15,
             rank: None,
             public_info_island: i.public_info_island,
+            dodo: None,
         };
         Ok(FullResponse::Template(Template::render(
             "see_islands_uuid_host",
@@ -277,7 +282,7 @@ pub fn leave_line(
 }
 
 pub fn people_in_line(
-    island_uuid: String,
+    island_uuid: &String,
     db: &State<Arc<Database>>,
 ) -> Result<u8, TurnipsError> {
     let people_in_line: u8 = redis::Cmd::new()
@@ -334,21 +339,20 @@ pub fn delete_island(
     }
 }
 
-#[get("/dodo/<island_uuid>")]
 pub fn get_dodo(
-    user: User,
-    island_uuid: String,
-    db: State<Arc<Database>>,
-) -> Result<FullResponse, TurnipsError> {
-    let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect())?;
+    user: &User,
+    island_uuid: &String,
+    db: &State<Arc<Database>>,
+) -> Option<String> {
+    let island = PrivateInfoIsland::get(&island_uuid, &mut db.connect()).unwrap();
     if let Some(i) = island {
-        let rank = rank(&user, &island_uuid, &db)?;
+        let rank = rank(&user, &island_uuid, &db).unwrap();
         match rank {
-            Some(r) if r < i.public_info_island.max_visitors_allowed => Ok(FullResponse::StringData(i.dodo)),
-            _ => Ok(FullResponse::Status(Status::NotFound)),
+            Some(r) if r <= i.public_info_island.max_visitors_allowed => Some(i.dodo),
+            _ => None,
         }
     } else {
-        Ok(FullResponse::Status(Status::NotFound))
+        None
     }
 }
 
