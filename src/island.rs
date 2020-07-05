@@ -100,7 +100,7 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
                 .into_iter()
                 .map(|i| ClientSeeIsland {
                     people_in_line: people_in_line(&i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
-                    eta_mins: 10,
+                    eta_mins: 0,
                     rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
                     dodo: None,
@@ -110,7 +110,7 @@ pub fn see_islands(user: Option<User>, db: State<Arc<Database>>) -> Result<Templ
                 .into_iter()
                 .map(|i| ClientSeeIsland {
                     people_in_line: people_in_line(&i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap(),
-                    eta_mins: 10,
+                    eta_mins: 0,
                     rank: if user.is_some() { rank(user.as_ref().unwrap(), &i.public_info_island.uuid.to_hyphenated().to_string(), &db).unwrap() } else { None },
                     public_info_island: i.public_info_island,
                     dodo: None,
@@ -132,7 +132,7 @@ pub fn see_islands_uuid(
     if let Some(i) = island {
         let island = ClientSeeIsland {
             people_in_line: people_in_line(&uuid, &db).unwrap(),
-            eta_mins: 15,
+            eta_mins: 0,
             rank: if user.is_some() { rank(user.as_ref().unwrap(), &uuid, &db).unwrap() } else { None },
             public_info_island: i.public_info_island,
             dodo: if user.is_some() { get_dodo(user.as_ref().unwrap(), &uuid, &db) } else { None },
@@ -160,7 +160,7 @@ pub fn see_islands_uuid_host(
     if let Some(i) = island {
         let island = ClientSeeIsland {
             people_in_line: people_in_line(&uuid, &db).unwrap(),
-            eta_mins: 15,
+            eta_mins: 0,
             rank: None,
             public_info_island: i.public_info_island,
             dodo: None,

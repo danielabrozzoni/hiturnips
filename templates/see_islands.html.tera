@@ -21,12 +21,12 @@
             <tbody>
             {% for island in my_islands %}
                 <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.public_info_island.uuid}}'">
-                    <td>{{island.public_info_island.name}}</td>
-                    <td>{{island.public_info_island.host_name}}</td>
-                    <td>{{island.public_info_island.turnips_price}}</td>
-                    <td>{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
-                    <td>{{island.people_in_line}}</td>
-                    <td>{{island.eta_mins}} minutes</td>
+                    <td data-label="Island name">{{island.public_info_island.name}}</td>
+                    <td data-label="Host name">{{island.public_info_island.host_name}}</td>
+                    <td data-label="Turnips price">{{island.public_info_island.turnips_price}}</td>
+                    <td data-label="Fees">{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
+                    <td data-label="People in line">{{island.people_in_line}}</td>
+                    <td data-label="ETA">{# {{island.eta_mins}} minutes #} N/A</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -47,16 +47,17 @@
         <tbody>
         {% for island in islands %}
             <tr class="tr-body" onClick="window.location.href='/see_islands/{{island.public_info_island.uuid}}'">
-                <td>{{island.public_info_island.name}}</td>
-                <td>{{island.public_info_island.host_name}}</td>
-                <td>{{island.public_info_island.turnips_price}}</td>
-                <td>{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
-                <td>{{island.people_in_line}}</td>
-                <td>{{island.eta_mins}} minutes</td>
+                <td data-label="Island name">{{island.public_info_island.name}}</td>
+                <td data-label="Host name">{{island.public_info_island.host_name}}</td>
+                <td data-label="Turnips price">{{island.public_info_island.turnips_price}}</td>
+                <td data-label="Fees">{% if island.public_info_island.fee_required %} Required {% else %} Not required {% endif %}</td>
+                <td data-label="People in line">{{island.people_in_line}}</td>
+                <td data-label="ETA">{# {{island.eta_mins}} minutes #} N/A</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
         (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {

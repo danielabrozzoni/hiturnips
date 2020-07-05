@@ -1,7 +1,7 @@
 {% extends "see_islands_base" %}
 {% block line_info %}
     {% if not island.rank %}
-        Currenty there's {{ island.people_in_line }} {% if island.people_in_line == 1 %}person{% else %}people{% endif %} in line. <br>
+        Currenty there's {% if island.people_in_line == 0 %} no one {% else %} {{ island.people_in_line }} {% if island.people_in_line == 1 %}person{% else %}people{% endif %}{% endif %} in line. <br>
         If you join now, you'll be waiting in line for about {{ island.eta_mins }} minutes. <br>
     {% else %}
         You are number #{{island.rank}} in line. <br>
